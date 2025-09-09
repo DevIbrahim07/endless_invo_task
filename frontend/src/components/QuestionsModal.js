@@ -9,6 +9,14 @@ const QuestionsModal = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(true);
   const { submitResponses } = useAuth();
 
+  const steps = [
+    { id: 1, label: "Question 1" },
+    { id: 2, label: "Question 2" },
+    { id: 3, label: "Question 3" },
+    { id: 4, label: "Review" },
+    { id: 5, label: "Complete" },
+  ];
+
   useEffect(() => {
     if (isOpen) {
       fetchQuestions();
@@ -36,6 +44,9 @@ const QuestionsModal = ({ isOpen, onClose }) => {
   const handleNext = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
+    } else {
+      // Move to review step
+      setCurrentQuestionIndex(questions.length);
     }
   };
 
@@ -45,7 +56,7 @@ const QuestionsModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleSave = async () => {
+  const handleSubmit = async () => {
     const formattedResponses = Object.entries(responses).map(
       ([questionId, answer]) => ({
         questionId,
@@ -61,7 +72,15 @@ const QuestionsModal = ({ isOpen, onClose }) => {
     }
   };
 
+  const getCurrentStepStatus = (stepIndex) => {
+    const currentStep = currentQuestionIndex + 1;
+    if (stepIndex < currentStep) return "completed";
+    if (stepIndex === currentStep) return "active";
+    return "inactive";
+  };
+
   const isCurrentQuestionAnswered = () => {
+    if (currentQuestionIndex >= questions.length) return true;
     const currentQuestion = questions[currentQuestionIndex];
     return currentQuestion && responses[currentQuestion._id];
   };
@@ -76,8 +95,14 @@ const QuestionsModal = ({ isOpen, onClose }) => {
     return (
       <div className="modal-overlay">
         <div className="modal-content">
-          <div className="question-container">
-            <h3>Loading questions...</h3>
+          <button className="modal-close" onClick={onClose}>
+            ×
+          </button>
+          <div className="modal-header">
+            <h2 className="modal-title">Loading...</h2>
+            <p className="modal-subtitle">
+              Please wait while we load the questions.
+            </p>
           </div>
         </div>
       </div>
@@ -88,10 +113,99 @@ const QuestionsModal = ({ isOpen, onClose }) => {
     return (
       <div className="modal-overlay">
         <div className="modal-content">
+          <button className="modal-close" onClick={onClose}>
+            ×
+          </button>
+          <div className="modal-header">
+            <h2 className="modal-title">No Questions Available</h2>
+            <p className="modal-subtitle">
+              There are no questions to display at this time.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Review step
+  if (currentQuestionIndex >= questions.length) {
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <button className="modal-close" onClick={onClose}>
+            ×
+          </button>
+
+          <div className="modal-header">
+            <h2 className="modal-title">Complete your onboarding</h2>
+            <p className="modal-subtitle">
+              Review your answers before submitting.
+            </p>
+          </div>
+
+          <div className="progress-container">
+            <div className="progress-steps">
+              {steps.map((step, index) => (
+                <React.Fragment key={step.id}>
+                  <div className="progress-step">
+                    <div
+                      className={`step-circle ${getCurrentStepStatus(
+                        index + 1
+                      )}`}
+                    >
+                      {getCurrentStepStatus(index + 1) === "completed"
+                        ? "✓"
+                        : step.id}
+                    </div>
+                    <div
+                      className={`step-label ${getCurrentStepStatus(
+                        index + 1
+                      )}`}
+                    >
+                      {step.label}
+                    </div>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div
+                      className={`step-connector ${
+                        getCurrentStepStatus(index + 1) === "completed"
+                          ? "completed"
+                          : ""
+                      }`}
+                    />
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+
           <div className="question-container">
-            <h3>No questions available</h3>
-            <button className="btn" onClick={onClose}>
-              Close
+            <h3 className="question-title">Review Your Answers</h3>
+
+            <div style={{ textAlign: "left", marginBottom: "24px" }}>
+              {questions.map((question, index) => (
+                <div key={question._id} className="form-group">
+                  <label className="form-label">
+                    {index + 1}. {question.question}
+                  </label>
+                  <div className="radio-option selected">
+                    <span>{responses[question._id] || "Not answered"}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="modal-buttons">
+            <button className="btn btn-secondary" onClick={handlePrevious}>
+              Back
+            </button>
+            <button
+              className="btn btn-success"
+              onClick={handleSubmit}
+              disabled={!areAllQuestionsAnswered()}
+            >
+              Submit
             </button>
           </div>
         </div>
@@ -104,78 +218,94 @@ const QuestionsModal = ({ isOpen, onClose }) => {
   return (
     <div className="modal-overlay">
       <div className="modal-content">
-        <div className="question-container">
-          <h3>
-            Question {currentQuestionIndex + 1} of {questions.length}
-          </h3>
-          <p
-            style={{
-              marginBottom: "20px",
-              fontSize: "18px",
-              fontWeight: "bold",
-            }}
-          >
-            {currentQuestion.question}
-          </p>
+        <button className="modal-close" onClick={onClose}>
+          ×
+        </button>
 
-          <ul className="options">
-            {currentQuestion.options.map((option, index) => (
-              <li key={index}>
-                <input
-                  type="radio"
-                  id={`option-${index}`}
-                  name={`question-${currentQuestion._id}`}
-                  value={option}
-                  checked={responses[currentQuestion._id] === option}
-                  onChange={() =>
+        <div className="modal-header">
+          <h2 className="modal-title">Complete your onboarding</h2>
+          <p className="modal-subtitle">
+            Provide your complete detail to proceed.
+          </p>
+        </div>
+
+        <div className="progress-container">
+          <div className="progress-steps">
+            {steps.map((step, index) => (
+              <React.Fragment key={step.id}>
+                <div className="progress-step">
+                  <div
+                    className={`step-circle ${getCurrentStepStatus(index + 1)}`}
+                  >
+                    {getCurrentStepStatus(index + 1) === "completed"
+                      ? "✓"
+                      : step.id}
+                  </div>
+                  <div
+                    className={`step-label ${getCurrentStepStatus(index + 1)}`}
+                  >
+                    {step.label}
+                  </div>
+                </div>
+                {index < steps.length - 1 && (
+                  <div
+                    className={`step-connector ${
+                      getCurrentStepStatus(index + 1) === "completed"
+                        ? "completed"
+                        : ""
+                    }`}
+                  />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+
+        <div className="question-container">
+          <div className="form-group">
+            <label className="form-label">{currentQuestion.question}</label>
+            <div className="radio-group">
+              {currentQuestion.options.map((option, index) => (
+                <div
+                  key={index}
+                  className={`radio-option ${
+                    responses[currentQuestion._id] === option ? "selected" : ""
+                  }`}
+                  onClick={() =>
                     handleOptionSelect(currentQuestion._id, option)
                   }
-                />
-                <label htmlFor={`option-${index}`}>{option}</label>
-              </li>
-            ))}
-          </ul>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginTop: "30px",
-            }}
-          >
-            <button
-              className="btn"
-              onClick={handlePrevious}
-              disabled={currentQuestionIndex === 0}
-              style={{ width: "auto", padding: "10px 20px" }}
-            >
-              Previous
-            </button>
-
-            {currentQuestionIndex < questions.length - 1 ? (
-              <button
-                className="btn"
-                onClick={handleNext}
-                disabled={!isCurrentQuestionAnswered()}
-                style={{ width: "auto", padding: "10px 20px" }}
-              >
-                Next
-              </button>
-            ) : (
-              <button
-                className="btn"
-                onClick={handleSave}
-                disabled={!areAllQuestionsAnswered()}
-                style={{
-                  width: "auto",
-                  padding: "10px 20px",
-                  backgroundColor: "#28a745",
-                }}
-              >
-                Save
-              </button>
-            )}
+                >
+                  <input
+                    type="radio"
+                    name={`question-${currentQuestion._id}`}
+                    value={option}
+                    checked={responses[currentQuestion._id] === option}
+                    onChange={() =>
+                      handleOptionSelect(currentQuestion._id, option)
+                    }
+                  />
+                  <label>{option}</label>
+                </div>
+              ))}
+            </div>
           </div>
+        </div>
+
+        <div className="modal-buttons">
+          <button
+            className="btn btn-secondary"
+            onClick={handlePrevious}
+            disabled={currentQuestionIndex === 0}
+          >
+            Back
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={handleNext}
+            disabled={!isCurrentQuestionAnswered()}
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>
