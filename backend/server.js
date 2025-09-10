@@ -4,7 +4,7 @@ const cors = require("cors");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
 require("dotenv").config();
-
+// Routes Import
 const authRoutes = require("./routes/auth");
 const questionRoutes = require("./routes/questions");
 const userRoutes = require("./routes/user");
@@ -22,7 +22,7 @@ app.use(
 
 app.use(express.json());
 
-// Session configuration
+// Session ki configuration
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -34,7 +34,7 @@ app.use(
     cookie: {
       secure: false, // Set to true in production with HTTPS
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours k bad expire ho jae ga
     },
   })
 );
@@ -57,7 +57,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// Routes
+// api Routes setup
 app.use("/api/auth", authRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/user", userRoutes);
@@ -67,7 +67,7 @@ app.use("/api/admin", adminRoutes);
 app.get("/api/test", (req, res) => {
   res.json({ message: "Backend is working!" });
 });
-
+// server kr run krne k liye on 5000 port
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
